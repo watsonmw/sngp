@@ -16,15 +16,15 @@ SOURCES += main.cpp\
     mainwindow.cpp \
     problem.cpp \
     navlistview.cpp \
-    snodeeval.cpp \
     sngpworker.cpp \
-    snode.cpp
+    snode.cpp \
+    sevalengine.cpp
 
 HEADERS  += mainwindow.h \
     problem.h \
     navlistview.h \
-    snodeeval.h \
     sngpworker.h \
-    snode.h
+    snode.h \
+    sevalengine.h
 
 FORMS    += mainwindow.ui

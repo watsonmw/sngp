@@ -3,6 +3,10 @@
 
 #include <QListView>
 
+/*
+ * Augment QListView so up/down arrowa selects an item
+ * and issue a 'clicked' signal.
+ */
 class NavListView : public QListView
 {
     Q_OBJECT

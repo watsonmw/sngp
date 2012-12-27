@@ -40,7 +40,7 @@ int SNode::getNumParams() const
     }
 }
 
-int SNode::isValue() const
+bool SNode::isValue() const
 {
     return (op == InputOp || op == ValOp);
 }

@@ -1,26 +1,26 @@
-#include "snodeeval.h"
+#include "sevalengine.h"
 
 #include <stdlib.h>
 
-SNodeEval::SNodeEval()
+SEvalEngine::SEvalEngine()
   : _numInputs(0),
     _size(0),
     _oldNodeIndex(0)
 {
 }
 
-SNodeEval::~SNodeEval()
+SEvalEngine::~SEvalEngine()
 {
 }
 
-void SNodeEval::evalAll(std::vector<int> &values)
+void SEvalEngine::evalAll(std::vector<int> &values)
 {
     for (size_t i = _numInputs; i < _nodes.size(); ++i) {
         values[i] = evalNode(i, values);
     }
 }
 
-void SNodeEval::evalChanged(std::vector<int>& values)
+void SEvalEngine::evalChanged(std::vector<int>& values)
 {
     for (std::set<int>::iterator it = _changedNodes.begin();
          it != _changedNodes.end(); ++it)
@@ -30,12 +30,12 @@ void SNodeEval::evalChanged(std::vector<int>& values)
     }
 }
 
-void SNodeEval::clearChanged()
+void SEvalEngine::clearChanged()
 {
     _changedNodes.clear();
 }
 
-int SNodeEval::evalNode(int i, std::vector<int>& values)
+int SEvalEngine::evalNode(int i, std::vector<int>& values)
 {
     SNode& node = _nodes[i];
 
@@ -150,7 +150,7 @@ int SNodeEval::evalNode(int i, std::vector<int>& values)
     return 0;
 }
 
-void SNodeEval::mutate()
+void SEvalEngine::mutate()
 {
     int nodeIndex = _numInputs + (rand() % (_size - _numInputs));
     _oldNode = _nodes[nodeIndex];
@@ -158,7 +158,7 @@ void SNodeEval::mutate()
     smut(nodeIndex);
 }
 
-void SNodeEval::restore()
+void SEvalEngine::restore()
 {
     SNode& currentNode = _nodes[_oldNodeIndex];
     for(int i = 0; i < _oldNode.getNumParams(); ++i) {
@@ -173,7 +173,7 @@ void SNodeEval::restore()
     }
 }
 
-void SNodeEval::smut(int i)
+void SEvalEngine::smut(int i)
 {
     SNode& node = _nodes[i];
 
@@ -193,48 +193,51 @@ void SNodeEval::smut(int i)
     }
 }
 
-void SNodeEval::switchLink(int i, int oldLink, int newLink)
+void SEvalEngine::switchLink(int i, int oldLink, int newLink)
 {
     if (oldLink == newLink) {
         return;
     }
 
     if (oldLink >= _numInputs) {
-        std::multiset<int>& link = _nodeLinks[oldLink];
-        std::multiset<int>::iterator it = link.find(i);
+        NodeLinks& link = _nodeLinks[oldLink];
+        NodeLinks::iterator it = link.find(i);
         if (it  != link.end()) {
             link.erase(it);
         }
     }
 
     if (newLink >= _numInputs) {
-        std::multiset<int>& link = _nodeLinks[newLink];
+        NodeLinks& link = _nodeLinks[newLink];
         link.insert(i);
     }
 }
 
-void SNodeEval::markChanged(int index)
+void SEvalEngine::markChanged(int index)
 {
-    std::pair<std::set<int>::iterator,bool> ret = _changedNodes.insert(index);
+    std::pair<std::set<int>::iterator,bool> ret =
+            _changedNodes.insert(index);
+
     if (ret.second) {
-        std::multiset<int>& links = _nodeLinks[index];
-        for (std::multiset<int>::iterator it = links.begin(); it != links.end(); ++it) {
+        NodeLinks& links = _nodeLinks[index];
+        for (NodeLinksIterator it = links.begin();
+             it != links.end(); ++it) {
             markChanged(*it);
         }
     }
 }
 
-void SNodeEval::generateLinks()
+void SEvalEngine::generateLinks()
 {
     for (int i = _numInputs; i < _size; ++i) {
-        std::multiset<int>& links = _nodeLinks[i];
+        NodeLinks& links = _nodeLinks[i];
         links.clear();
     }
     for (int i = _numInputs; i < _size; ++i) {
         SNode& node = _nodes[i];
         for (int j = 0; j < node.getNumParams(); ++j) {
             int k = node.param[j];
-            std::multiset<int>& links = _nodeLinks[k];
+            NodeLinks& links = _nodeLinks[k];
             if (i >= _numInputs) {
                 links.insert(i);
             }
@@ -242,12 +245,12 @@ void SNodeEval::generateLinks()
     }
 }
 
-bool SNodeEval::verifyLinksExist()
+bool SEvalEngine::verifyLinksExist()
 {
     // Used for debugging purposes only
     for (int i = _numInputs; i < _size; ++i) {
-        std::multiset<int>& links = _nodeLinks[i];
-        for (std::multiset<int>::iterator it = links.begin();
+        NodeLinks& links = _nodeLinks[i];
+        for (NodeLinksIterator it = links.begin();
              it != links.end(); ++it)
         {
             bool bFound = false;
@@ -267,15 +270,15 @@ bool SNodeEval::verifyLinksExist()
     return true;
 }
 
-bool SNodeEval::verifyAllLinks()
+bool SEvalEngine::verifyAllLinks()
 {
     // Used for debugging purposes only
-    std::vector<std::multiset<int> > nodeLinks(_size);
+    std::vector<NodeLinks > nodeLinks(_size);
     for (int i = _numInputs; i < _size; ++i) {
         SNode& node = _nodes[i];
         for (int j = 0; j < node.getNumParams(); ++j) {
             int k = node.param[j];
-            std::multiset<int>& links = nodeLinks[k];
+            NodeLinks& links = nodeLinks[k];
             if (i >= _numInputs) {
                 links.insert(i);
             }
@@ -284,13 +287,13 @@ bool SNodeEval::verifyAllLinks()
 
     bool bNotEqual = false;
     for (int i = _numInputs; i < _size; ++i) {
-        std::multiset<int>& linksReal = nodeLinks[i];
-        std::multiset<int>& linksCached = _nodeLinks[i];
-        for (std::multiset<int>::iterator it = linksCached.begin();
+        NodeLinks& linksReal = nodeLinks[i];
+        NodeLinks& linksCached = _nodeLinks[i];
+        for (NodeLinksIterator it = linksCached.begin();
              it != linksCached.end(); ++it)
         {
             int j = *it;
-            std::multiset<int>::iterator j_it = linksReal.find(j);
+            NodeLinksIterator j_it = linksReal.find(j);
             if (j_it  == linksReal.end()) {
                 bNotEqual = true;
             } else {
@@ -305,7 +308,7 @@ bool SNodeEval::verifyAllLinks()
     return !bNotEqual;
 }
 
-void SNodeEval::randomize(int i)
+void SEvalEngine::randomise(int i)
 {
     SNode& node = _nodes[i];
 
@@ -329,7 +332,7 @@ void SNodeEval::randomize(int i)
     }
 }
 
-void SNodeEval::init()
+void SEvalEngine::init()
 {
     _nodes.resize(_size);
     _nodeLinks.resize(_size);
@@ -339,13 +342,13 @@ void SNodeEval::init()
     }
 
     for (int i = _numInputs; i < _size; ++i) {
-        randomize(i);
+        randomise(i);
     }
 
     generateLinks();
 }
 
-void SNodeEval::setAvailableOps(const std::vector<SNode::Op> &ops)
+void SEvalEngine::setAvailableOps(const std::vector<SNode::Op> &ops)
 {
     _ops = ops;
 }

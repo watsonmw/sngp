@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(_ui->nodeListView, SIGNAL(clicked(const QModelIndex&)),
             this, SLOT(programSelected(const QModelIndex&)));
 
-    _ui->problemComboBox->addItem("Multiplexer 4", PROBLEM_Multiplexer);
+    _ui->problemComboBox->addItem("Multiplexer 6", PROBLEM_Multiplexer);
     _ui->problemComboBox->addItem("Even Parity 4", PROBLEM_EvenParity4);
     _ui->problemComboBox->addItem("Even Parity 5", PROBLEM_EvenParity5);
     _ui->problemComboBox->addItem("Even Parity 6", PROBLEM_EvenParity6);

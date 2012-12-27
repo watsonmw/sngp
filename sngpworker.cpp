@@ -8,32 +8,37 @@
 SNGPWorker::SNGPWorker()
   : _bRunning(false),
     _problem(NULL),
-    _times(0)
+    _times(0),
+    _maxGenerations(25000)
 {
 }
 
 SNGPWorker::~SNGPWorker()
 {
+    // Exit the other thread before cleaning up
     pause();
     delete _problem;
 }
 
 void SNGPWorker::setProblem(Problem *problem)
 {
+    // Delete the old problem
     delete _problem;
+
+    // Setup the eval engine according to the problem
     _problem = problem;
-    _nodeEval.setNumInputs(_problem->getNumInputs());
-    _nodeEval.setAvailableOps(_problem->getOps());
-    _nodeEval.setSize(100);
+    _evalEngine.setNumInputs(_problem->getNumInputs());
+    _evalEngine.setAvailableOps(_problem->getOps());
+    _evalEngine.setSize(100);
     _testCaseResults.resize(_problem->getNumFitnessCases());
-    _nodeEval.init();
-    _nodeEval.setNumInputs(_problem->getNumInputs());
-    _fitness.resize(_nodeEval.getSize());
+    _evalEngine.init();
+    _evalEngine.setNumInputs(_problem->getNumInputs());
+    _fitness.resize(_evalEngine.getSize());
 
     // Initialize the result sets for each test case.
     for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
         std::vector<int>& results = _testCaseResults[i];
-        results.resize(_nodeEval.getSize());
+        results.resize(_evalEngine.getSize());
         int* inputs = _problem->getInputs(i);
         for (int j = 0; j < _problem->getNumInputs(); ++j) {
             results[j] = inputs[j];
@@ -49,11 +54,16 @@ void SNGPWorker::setNumTimesToRun(int times)
     _times = times;
 }
 
+void SNGPWorker::setNumMaxGenerations(int maxGenerations)
+{
+    _maxGenerations = maxGenerations;
+}
+
 void SNGPWorker::reset()
 {
     QMutexLocker lock(&_mutex);
     _stats.reset();
-    _nodeEval.init();
+    _evalEngine.init();
 }
 
 void SNGPWorker::pause()
@@ -94,7 +104,7 @@ void SNGPWorker::runGeneration()
 
         for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
             std::vector<int>& results = _testCaseResults[i];
-            _nodeEval.evalAll(results);
+            _evalEngine.evalAll(results);
             for (size_t j = 0; j < _fitness.size(); ++j) {
                 _fitness[j] += _problem->getFitness(results[j], i);
             }
@@ -119,10 +129,10 @@ void SNGPWorker::runGeneration()
         _stats.bestIndividualScoreEver = bestScore;
     } else {
         if (_stats.avgScore < _stats.lastAvgScore) {
-            _nodeEval.restore();
+            _evalEngine.restore();
             _stats.avgScore = _stats.lastAvgScore;
         }
-        _nodeEval.mutate();
+        _evalEngine.mutate();
 
         // Calculate fitness values for all test cases
         for (size_t i = 0; i < _fitness.size(); ++i) {
@@ -131,12 +141,12 @@ void SNGPWorker::runGeneration()
 
         for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
             std::vector<int>& results = _testCaseResults[i];
-            _nodeEval.evalChanged(results);
+            _evalEngine.evalChanged(results);
             for (size_t j = 0; j < _fitness.size(); ++j) {
                 _fitness[j] += _problem->getFitness(results[j], i);
             }
         }
-        _nodeEval.clearChanged();
+        _evalEngine.clearChanged();
 
         // Calculate total scores
         double totalScore = 0.0;
@@ -230,7 +240,7 @@ void SNGPWorker::run()
             if (_times <= _stats.runs) {
                 _bRunning = false;
             } else {
-                _nodeEval.init();
+                _evalEngine.init();
                 _stats.generation = 0;
             }
         }
@@ -240,7 +250,7 @@ void SNGPWorker::run()
 const std::vector<SNode> &SNGPWorker::getNodes()
 {
    if (!_bRunning) {
-       _nodesCopy = _nodeEval.getNodes();
+       _nodesCopy = _evalEngine.getNodes();
    }
    return _nodesCopy;
 }
