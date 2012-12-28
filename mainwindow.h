@@ -8,6 +8,8 @@ namespace Ui {
 class MainWindow;
 }
 
+class QModelIndex;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT

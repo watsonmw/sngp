@@ -8,7 +8,7 @@ Problem::Problem()
 Problem::~Problem()
 {
     for (size_t i = 0; i < _testCases.size(); ++i) {
-        delete _testCases[i].inputs;
+        delete [] _testCases[i].inputs;
     }
 }
 
@@ -63,7 +63,7 @@ void ProblemMultiplexer::init()
         TestCase t;
         t.inputs = new int[_numInputs];
         for (int j = 0; j < _numInputs; ++j) {
-            t.inputs[j] = ((1 << _numInputs - 1 - j) & i) ? 1 : 0;
+            t.inputs[j] = ((1 << (_numInputs - 1 - j)) & i) ? 1 : 0;
         }
         t.output = t.inputs[((t.inputs[0] << 1) | t.inputs[1]) + 2];
         _testCases.push_back(t);
@@ -88,7 +88,7 @@ void ProblemEvenParity::init()
         t.inputs = new int[_numInputs];
         int bitsSet = 0;
         for (int j = 0; j < _numInputs; ++j) {
-            t.inputs[j] = ((1 << _numInputs - 1 - j) & i) ? 1 : 0;
+            t.inputs[j] = ((1 << (_numInputs - 1 - j)) & i) ? 1 : 0;
             if (t.inputs[j]) bitsSet+= 1;
         }
         t.output = bitsSet & 1;
