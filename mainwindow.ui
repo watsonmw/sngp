@@ -39,7 +39,14 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="goTimesButton">
+              <widget class="QPushButton" name="goTimes10Button">
+               <property name="text">
+                <string>Go10</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="goTimes100Button">
                <property name="text">
                 <string>Go100</string>
                </property>
@@ -150,6 +157,20 @@
              </item>
              <item row="6" column="1">
               <widget class="QLabel" name="hitsLabel">
+               <property name="text">
+                <string>0</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Time:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="1">
+              <widget class="QLabel" name="timeTakenLabel">
                <property name="text">
                 <string>0</string>
                </property>

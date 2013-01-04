@@ -69,22 +69,29 @@ public:
     void reset();
 
     // Best score during the run.
-    double bestScoreEver;
+    int64_t bestScoreEver;
 
     // Average score of all individuals for the current generation
-    double avgScore;
+    int64_t avgScore;
 
     // Average score of all individuals for the previous generation
-    double lastAvgScore;
+    int64_t lastAvgScore;
 
     // Best score for an individual for the current generation
-    double bestIndividualScore;
+    int64_t bestIndividualScore;
 
     // Best score ever for an individual during the run
-    double bestIndividualScoreEver;
+    int64_t bestIndividualScoreEver;
 
     // Current generation
     int generation;
+
+    // Start time in milliseconds since the epoch
+    int64_t startTimeMilliseconds;
+
+    // Time take in milliseconds once the run has completed, if zero the
+    // run has not completed yet.
+    int64_t timeTakenMilliseconds;
 
     // Number of runs that found a solutions
     int hits;

@@ -2,6 +2,21 @@
 
 #include <stdlib.h>
 
+static int Rand(int range)
+{
+    // Modding the value returned by rand() is not strictly
+    // correct as it affects the distribution, by oversampling
+    // the values returned by RAND_MAX % range.  The effect is
+    // slight here as we only request small ranges from rand()
+    // but worth noting in case you want a larger range.
+#ifdef BETTER_RAND_DISTRIBUTION
+    double f = (1.0 / (RAND_MAX + 1.0));
+    return int(qrand() * f * range);
+#else
+    return qrand() % range;
+#endif
+}
+
 SEvalEngine::SEvalEngine()
   : _numInputs(0),
     _size(0),
@@ -16,16 +31,6 @@ SEvalEngine::~SEvalEngine()
 void SEvalEngine::evalAll(std::vector<int> &values)
 {
     for (size_t i = _numInputs; i < _nodes.size(); ++i) {
-        values[i] = evalNode(i, values);
-    }
-}
-
-void SEvalEngine::evalChanged(std::vector<int>& values)
-{
-    for (std::set<int>::iterator it = _changedNodes.begin();
-         it != _changedNodes.end(); ++it)
-    {
-        int i = *it;
         values[i] = evalNode(i, values);
     }
 }
@@ -152,7 +157,7 @@ int SEvalEngine::evalNode(int i, std::vector<int>& values)
 
 void SEvalEngine::mutate()
 {
-    int nodeIndex = _numInputs + (rand() % (_size - _numInputs));
+    int nodeIndex = _numInputs + Rand(_size - _numInputs);
     _oldNode = _nodes[nodeIndex];
     _oldNodeIndex = nodeIndex;
     smut(nodeIndex);
@@ -179,13 +184,19 @@ void SEvalEngine::smut(int i)
 
     if (i > 1) {
         if (node.op == SNode::ValOp) {
-            node.param[0] = rand() % 1001;
+            node.param[0] = Rand(1001);
         } else {
             if (node.getNumParams()) {
-                int j = rand() % node.getNumParams();
-                int oldLink = node.param[j];
-                int newLink = rand() % i;
-                node.param[j] = newLink;
+                int it = i - 1;
+                int j = Rand(node.getNumParams() * it);
+                int jdiv = j / it;
+                int jrem = j % it;
+                int oldLink = node.param[jdiv];
+                if (jrem >= oldLink) {
+                    jrem++;
+                }
+                int newLink = jrem;
+                node.param[jdiv] = newLink;
                 switchLink(i, oldLink, newLink);
                 markChanged(i);
             }
@@ -312,17 +323,17 @@ void SEvalEngine::randomise(int i)
 {
     SNode& node = _nodes[i];
 
-    int val = rand() % _ops.size();
+    int val = Rand(_ops.size());
     node.op = _ops[val];
 
     if (i > 1) {
         if (node.op == SNode::ValOp) {
-            node.param[0] = rand() % 1001;
+            node.param[0] = Rand(1001);
             node.param[1] = 0;
             node.param[2] = 0;
         } else {
             for (int j = 0; j < node.getNumParams(); ++j) {
-                node.param[j] = rand() % i;
+                node.param[j] = Rand(i);
             }
         }
     } else {

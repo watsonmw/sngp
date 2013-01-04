@@ -42,12 +42,12 @@ public:
      * fitness (this individual is a solution to the problem).
      */
     virtual bool hitTargetFitness(
-        const std::vector<double> &values) = 0;
+        const std::vector<int> &values) = 0;
 
     /*
      * Get the fitness value for the given output and testcase.
      */
-    virtual double getFitness(int value, int testCase) = 0;
+    virtual int getFitness(int value, int expectedOutput) = 0;
 
 
 protected:
@@ -78,9 +78,9 @@ public:
     ProblemMultiplexer();
 
     virtual bool hitTargetFitness(
-        const std::vector<double>& values);
+        const std::vector<int>& values);
 
-    virtual double getFitness(int value, int testCase);
+    virtual int getFitness(int value, int expectedOutput);
 
 protected:
     void init();
@@ -100,9 +100,9 @@ public:
     ProblemEvenParity(int inputs);
 
     virtual bool hitTargetFitness(
-        const std::vector<double>& values);
+        const std::vector<int>& values);
 
-    virtual double getFitness(int value, int testCase);
+    virtual int getFitness(int value, int expectedOutput);
 
 protected:
     void init();
@@ -124,9 +124,9 @@ public:
     ProblemSymbolicRegression();
 
     virtual bool hitTargetFitness(
-        const std::vector<double>& values);
+        const std::vector<int>& values);
 
-    virtual double getFitness(int value, int testCase);
+    virtual int getFitness(int value, int expectedOutput);
 
 protected:
     void init();

@@ -3,6 +3,7 @@
 
 #include <QTimer>
 #include <QStringListModel>
+#include <QDateTime>
 
 enum PROBLEM {
     PROBLEM_Multiplexer,
@@ -26,7 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(_timer, SIGNAL(timeout()), this, SLOT(updateStats()));
 
     connect(_ui->stopGoButton, SIGNAL(clicked()), this, SLOT(pauseResume()));
-    connect(_ui->goTimesButton, SIGNAL(clicked()), this, SLOT(goTimes()));
+    connect(_ui->goTimes10Button, SIGNAL(clicked()), this, SLOT(goTimes10()));
+    connect(_ui->goTimes100Button, SIGNAL(clicked()), this, SLOT(goTimes100()));
     connect(_ui->resetButton, SIGNAL(clicked()), this, SLOT(reset()));
     connect(_ui->stepButton, SIGNAL(clicked()), this, SLOT(step()));
     connect(_ui->nodeListView, SIGNAL(clicked(const QModelIndex&)),
@@ -70,17 +72,27 @@ void MainWindow::pauseResume()
     updateNodeList();
 }
 
-void MainWindow::goTimes()
+void MainWindow::goTimes(int times)
 {
     if (_sngpWorker.isRunning()) {
         _sngpWorker.pause();
     }
     _sngpWorker.reset();
-    _sngpWorker.setNumTimesToRun(100);
+    _sngpWorker.setNumTimesToRun(times);
     _sngpWorker.resume();
     _timer->start(1000);
     updateStats();
     updateNodeList();
+}
+
+void MainWindow::goTimes10()
+{
+    goTimes(10);
+}
+
+void MainWindow::goTimes100()
+{
+    goTimes(100);
 }
 
 void MainWindow::step()
@@ -103,6 +115,18 @@ void MainWindow::updateStats()
         QString::number(stats.bestIndividualScoreEver));
     _ui->hitsLabel->setText(QString("%1/%2").
         arg(stats.hits).arg(stats.runs));
+    int64_t timeTakenMilliseconds = 0;
+    if (stats.timeTakenMilliseconds == 0) {
+        if (stats.startTimeMilliseconds > 0) {
+            timeTakenMilliseconds = QDateTime::currentMSecsSinceEpoch() -
+                                                stats.startTimeMilliseconds;
+        }
+    } else {
+        timeTakenMilliseconds = stats.timeTakenMilliseconds;
+    }
+    _ui->timeTakenLabel->setText(QString("%1").
+        arg(timeTakenMilliseconds / 1000.0, 0, 'f', 4));
+
 
     if (_sngpWorker.isRunning()) {
         _ui->stopGoButton->setText("Stop");
@@ -117,12 +141,12 @@ void MainWindow::updateNodeList()
 {
     QStringList nodeList;
     const std::vector<SNode>& nodes = _sngpWorker.getNodes();
-    const std::vector<double>& values = _sngpWorker.getFitness();
+    const std::vector<int>& values = _sngpWorker.getFitness();
     if (nodes.size() > 0) {
         for (int i = 0; i < (int)nodes.size(); ++i) {
           const SNode& node = nodes[i];
           QString nodeDetails;
-          double val = 0;
+          int val = 0;
           if ((int)values.size() > i) {
               val = values[i];
           }

@@ -71,16 +71,21 @@ public:
     void clearChanged();
 
     /*
-     * Eval the nodes that have changed by mutate() and
-     * restore() since the last time clearChanged() was called.
-     * Also evaluates any nodes that depend on the values
-     * returned by the nodes that changed.
+     * Eval a single node.
      * The param 'values' is the stored list of results from
      * the last time evalAll() or evalChanged() was called.
      * Must be the same number of values as there are nodes
      * (including inputs).
      */
-    void evalChanged(std::vector<int> &values);
+    int evalNode(int i, std::vector<int> &values);
+
+    /*
+     * Get the nodes that have changed by mutate() and
+     * restore() since the last time clearChanged() was called.
+     * Also returns any nodes that depend on the values
+     * returned by the nodes that have been modified.
+     */
+    std::set<int>& getChangedNodes() { return _changedNodes; }
 
 
 private:
@@ -111,11 +116,6 @@ private:
     void smut(int i);
 
     /*
-     * Eval a single node.
-     */
-    int evalNode(int i, std::vector<int> &values);
-
-    /*
      * Switch a link in the link list for the given node.
      */
     void switchLink(int i, int oldLink, int newLink);
@@ -144,7 +144,6 @@ private:
     std::vector<NodeLinks> _nodeLinks;
 
     // Ordered list of nodes that were changed by smut() and/or restore()
-
     std::set<int> _changedNodes;
 
     // The last node that was changed by smut()

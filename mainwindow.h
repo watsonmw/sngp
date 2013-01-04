@@ -19,13 +19,15 @@ public:
 private slots:
     void reset();
     void pauseResume();
-    void goTimes();
+    void goTimes10();
+    void goTimes100();
     void step();
     void updateStats();
     void programSelected(const QModelIndex &index);
     void changeProblem(int index);
 
 private:
+    void goTimes(int times);
     void updateNodeList();
     void showProgram(int index);
 

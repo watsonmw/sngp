@@ -37,19 +37,19 @@ ProblemMultiplexer::ProblemMultiplexer()
     init();
 }
 
-bool ProblemMultiplexer::hitTargetFitness(const std::vector<double> &values)
+bool ProblemMultiplexer::hitTargetFitness(const std::vector<int> &values)
 {
     for (size_t i = 0; i < values.size(); ++i) {
-        if (values[i] >= 63.9) {
+        if (values[i] >= (1 << _numInputs)) {
             return true;
         }
     }
     return false;
 }
 
-double ProblemMultiplexer::getFitness(int value, int testCase)
+int ProblemMultiplexer::getFitness(int value, int expectedOutput)
 {
-    return (value == getOutput(testCase)) ? 1.0 : 0.0;
+    return (value == expectedOutput) ? 1 : 0;
 }
 
 void ProblemMultiplexer::init()
@@ -96,19 +96,19 @@ void ProblemEvenParity::init()
     }
 }
 
-bool ProblemEvenParity::hitTargetFitness(const std::vector<double> &values)
+bool ProblemEvenParity::hitTargetFitness(const std::vector<int> &values)
 {
     for (size_t i = 0; i < values.size(); ++i) {
-         if (values[i] >= ((1 << _numInputs) - 0.1)) {
+         if (values[i] >= (1 << _numInputs)) {
              return true;
          }
     }
     return false;
 }
 
-double ProblemEvenParity::getFitness(int value, int testCase)
+int ProblemEvenParity::getFitness(int value, int expectedOutput)
 {
-    return (value == getOutput(testCase)) ? 1.0 : 0.0;
+    return (value == expectedOutput) ? 1 : 0;
 }
 
 ProblemSymbolicRegression::ProblemSymbolicRegression()
@@ -116,10 +116,10 @@ ProblemSymbolicRegression::ProblemSymbolicRegression()
     init();
 }
 
-bool ProblemSymbolicRegression::hitTargetFitness(const std::vector<double> &values)
+bool ProblemSymbolicRegression::hitTargetFitness(const std::vector<int> &values)
 {
     for (size_t i = 0; i < values.size(); ++i) {
-        if (values[i] >= -0.1) {
+        if (values[i] >= 0) {
             return true;
         }
     }
@@ -147,11 +147,14 @@ void ProblemSymbolicRegression::init()
     }
 }
 
-double ProblemSymbolicRegression::getFitness(int value, int testCase)
+int ProblemSymbolicRegression::getFitness(int value, int expectedOutput)
 {
-    double i = value - getOutput(testCase);
+    int i = value - expectedOutput;
     if (i > 0) {
         i = -i;
+    }
+    if (i < -10000000) {
+        i = -10000000;
     }
     return i;
 }

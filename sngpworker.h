@@ -81,7 +81,7 @@ public:
      * Get the fitness of all individual nodes, only
      * update when stopped.
      */
-    const std::vector<double>& getFitness();
+    const std::vector<int> &getFitness();
 
     /*
      * Get a somewhat readable output of the
@@ -98,8 +98,6 @@ private:
 
     void runGeneration();
 
-    int getFitness(const std::vector<int> &values, int target);
-
     // True when running, false when stopped.
     // Note: that the thread may still be running, but it won't
     // muck with private member variables.
@@ -112,11 +110,11 @@ private:
     std::vector<SNode> _nodesCopy;
 
     // Current fitness values
-    std::vector<double> _fitness;
+    std::vector<int> _fitness;
 
     // Copy of the fitness values, updates only when
     // stopped
-    std::vector<double> _fitnessCopy;
+    std::vector<int> _fitnessCopy;
 
     // Cached testcase results for each node and each
     // test case.

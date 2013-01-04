@@ -120,6 +120,8 @@ void SNodeStats::reset()
     bestIndividualScore = 0;
     bestIndividualScoreEver = 0;
     generation = 0;
+    startTimeMilliseconds = 0;
+    timeTakenMilliseconds = 0;
     hits = 0;
     runs = 0;
 }
