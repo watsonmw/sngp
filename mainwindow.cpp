@@ -155,7 +155,8 @@ void MainWindow::updateNodeList()
                             arg(val);
           nodeList << nodeDetails;
         }
-        QAbstractItemModel *model = new QStringListModel(nodeList);
+        QAbstractItemModel *model =
+                new QStringListModel(nodeList, _ui->nodeListView);
         _ui->nodeListView->setModel(model);
     } else {
         _ui->nodeListView->reset();
