@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "snode.h"
+#include "sortedarray.h"
 
 /*
  * Sample GP test cases.
@@ -14,28 +15,35 @@ public:
     Problem();
     virtual ~Problem();
 
-    virtual int getNumInputs();
+    int getNumInputs() { return _numInputs; }
 
     /*
      * Get the number of test cases.
      */
-    virtual int getNumFitnessCases();
+    int getNumFitnessCases() { return _testCases.size(); }
 
     /*
      * Get the inputs for the given test case
      */
-    virtual int* getInputs(int fitnessCase);
+    int* getInputs(int fitnessCase);
+
+    std::vector<int>& getOutputs() { return _outputs; }
 
     /*
      * Get the expected output for the given test case
      */
-    virtual int getOutput(int fitnessCase);
+    int getOutput(int fitnessCase) { return _outputs[fitnessCase]; }
+
+    /*
+     * Get the current set of results that were evaluate()d.
+     */
+    std::vector<int>& getTestCaseResults(int i) { return _testCaseResults[i]; }
 
     /*
      * Get the operators allowed for solving the
      * problem.
      */
-    virtual std::vector<SNode::Op>& getOps() { return _ops; }
+    std::vector<SNode::Op>& getOps() { return _ops; }
 
     /*
      * Return true if an individual has hit the target
@@ -45,23 +53,42 @@ public:
         const std::vector<int> &values) = 0;
 
     /*
-     * Get the fitness value for the given output and testcase.
+     * Optimized inner loop for evaluating all test cases.
+     * Don't let that virtual fool you! :)
      */
-    virtual int getFitness(int value, int expectedOutput) = 0;
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          std::vector<int> &outFitness) = 0;
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          const SortedArray<int> &changedNodes,
+                          std::vector<int> &outFitness) = 0;
 
+    void initTestCaseResults(int numNodes);
 
 protected:
     class TestCase {
     public:
-        TestCase() : inputs(0), output(0) { }
+        TestCase() : inputs(0) { }
 
         int* inputs; // each test case has _numInputs
                      // number of inputs.
-        int output;
     };
+
+    typedef int(*EvalNodeFunc)(SNode::Op, int, int, int, const std::vector<int> &);
+    typedef int(*CalcFitnessFunc)(int, int);
+
+    template<EvalNodeFunc evalNode, CalcFitnessFunc calcFitness>
+    void _evaluateAll(const std::vector<SNode> &nodes,
+                      std::vector<int> &outFitness);
+
+    template<EvalNodeFunc evalNode, CalcFitnessFunc calcFitness>
+    void _evaluate(const std::vector<SNode>& nodes,
+                   const SortedArray<int>& changedNodes,
+                   std::vector<int>& outFitness);
 
     int _numInputs;
     std::vector<TestCase> _testCases;
+    std::vector<int> _outputs;
+    std::vector<std::vector<int> > _testCaseResults;
     std::vector<SNode::Op> _ops;
 };
 
@@ -80,7 +107,12 @@ public:
     virtual bool hitTargetFitness(
         const std::vector<int>& values);
 
-    virtual int getFitness(int value, int expectedOutput);
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          const SortedArray<int> &changedNodes,
+                          std::vector<int> &outFitness);
+
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          std::vector<int> &outFitness);
 
 protected:
     void init();
@@ -102,7 +134,12 @@ public:
     virtual bool hitTargetFitness(
         const std::vector<int>& values);
 
-    virtual int getFitness(int value, int expectedOutput);
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          const SortedArray<int> &changedNodes,
+                          std::vector<int> &outFitness);
+
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          std::vector<int> &outFitness);
 
 protected:
     void init();
@@ -126,7 +163,12 @@ public:
     virtual bool hitTargetFitness(
         const std::vector<int>& values);
 
-    virtual int getFitness(int value, int expectedOutput);
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          const SortedArray<int> &changedNodes,
+                          std::vector<int> &outFitness);
+
+    virtual void evaluate(const std::vector<SNode> &nodes,
+                          std::vector<int> &outFitness);
 
 protected:
     void init();

@@ -20,6 +20,7 @@ static int Rand(int range)
 SEvalEngine::SEvalEngine()
   : _numInputs(0),
     _size(0),
+    _changedNodes(100),
     _oldNodeIndex(0)
 {
 }
@@ -40,15 +41,17 @@ void SEvalEngine::clearChanged()
     _changedNodes.clear();
 }
 
-int SEvalEngine::evalNode(int i, std::vector<int>& values)
+int SEvalEngine::evalNode(int i, const std::vector<int> &values)
 {
     SNode& node = _nodes[i];
+    return evalNode(node, values);
+}
 
+int SEvalEngine::evalNode(const SNode &node, const std::vector<int> &values)
+{
     switch (node.op) {
     case SNode::NoOp:
         return 0;
-    case SNode::InputOp:
-        return values[i];
     case SNode::ValOp:
         return node.param[0];
     default:
@@ -212,28 +215,26 @@ void SEvalEngine::switchLink(int i, int oldLink, int newLink)
 
     if (oldLink >= _numInputs) {
         NodeLinks& link = _nodeLinks[oldLink];
-        NodeLinks::iterator it = link.find(i);
-        if (it  != link.end()) {
-            link.erase(it);
+        for (size_t j = 0; j < link.size(); ++j) {
+            if (link[j] == i) {
+                link.erase(link.begin() + j);
+                break;
+            }
         }
     }
 
     if (newLink >= _numInputs) {
         NodeLinks& link = _nodeLinks[newLink];
-        link.insert(i);
+        link.push_back(i);
     }
 }
 
 void SEvalEngine::markChanged(int index)
 {
-    std::pair<std::set<int>::iterator,bool> ret =
-            _changedNodes.insert(index);
-
-    if (ret.second) {
+    if (_changedNodes.add(index)) {
         NodeLinks& links = _nodeLinks[index];
-        for (NodeLinksIterator it = links.begin();
-             it != links.end(); ++it) {
-            markChanged(*it);
+        for (size_t i = 0; i < links.size(); ++i) {
+            markChanged(links[i]);
         }
     }
 }
@@ -250,7 +251,7 @@ void SEvalEngine::generateLinks()
             int k = node.param[j];
             NodeLinks& links = _nodeLinks[k];
             if (i >= _numInputs) {
-                links.insert(i);
+                links.push_back(i);
             }
         }
     }
@@ -291,7 +292,7 @@ bool SEvalEngine::verifyAllLinks()
             int k = node.param[j];
             NodeLinks& links = nodeLinks[k];
             if (i >= _numInputs) {
-                links.insert(i);
+                links.push_back(i);
             }
         }
     }
@@ -300,15 +301,17 @@ bool SEvalEngine::verifyAllLinks()
     for (int i = _numInputs; i < _size; ++i) {
         NodeLinks& linksReal = nodeLinks[i];
         NodeLinks& linksCached = _nodeLinks[i];
-        for (NodeLinksIterator it = linksCached.begin();
-             it != linksCached.end(); ++it)
-        {
-            int j = *it;
-            NodeLinksIterator j_it = linksReal.find(j);
-            if (j_it  == linksReal.end()) {
+        for (size_t j = 0; j < linksCached.size(); ++j) {
+            int val = linksCached[j];
+            size_t k = 0;
+            for (; k < linksReal.size(); ++k) {
+                if (linksReal[k] == val) {
+                    linksReal.erase(linksReal.begin() + k);
+                    break;
+                }
+            }
+            if (k == linksReal.size()) {
                 bNotEqual = true;
-            } else {
-                linksReal.erase(j_it);
             }
         }
         if (linksReal.size() > 0) {

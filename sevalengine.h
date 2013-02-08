@@ -3,7 +3,7 @@
 
 #include "snode.h"
 #include <vector>
-#include <set>
+#include "sortedarray.h"
 
 /*
  * Stores and evaluates a graph of SNodes.
@@ -77,7 +77,8 @@ public:
      * Must be the same number of values as there are nodes
      * (including inputs).
      */
-    int evalNode(int i, std::vector<int> &values);
+    int evalNode(int i, const std::vector<int> &values);
+    int evalNode(const SNode &node, const std::vector<int> &values);
 
     /*
      * Get the nodes that have changed by mutate() and
@@ -85,8 +86,7 @@ public:
      * Also returns any nodes that depend on the values
      * returned by the nodes that have been modified.
      */
-    std::set<int>& getChangedNodes() { return _changedNodes; }
-
+    SortedArray<int>& getChangedNodes() { return _changedNodes; }
 
 private:
     /*
@@ -139,12 +139,12 @@ private:
     std::vector<SNode::Op> _ops;
 
     // For each node, the set of nodes that refer back to that node
-    typedef std::multiset<int> NodeLinks;
+    typedef std::vector<int> NodeLinks;
     typedef NodeLinks::iterator NodeLinksIterator;
     std::vector<NodeLinks> _nodeLinks;
 
     // Ordered list of nodes that were changed by smut() and/or restore()
-    std::set<int> _changedNodes;
+    SortedArray<int> _changedNodes;
 
     // The last node that was changed by smut()
     SNode _oldNode;

@@ -98,6 +98,8 @@ private:
 
     void runGeneration();
 
+    void resetFitness();
+
     // True when running, false when stopped.
     // Note: that the thread may still be running, but it won't
     // muck with private member variables.
@@ -115,10 +117,6 @@ private:
     // Copy of the fitness values, updates only when
     // stopped
     std::vector<int> _fitnessCopy;
-
-    // Cached testcase results for each node and each
-    // test case.
-    std::vector<std::vector<int> > _testCaseResults;
 
     // Memory barrier and lock for communication between
     // UI and worker thread.

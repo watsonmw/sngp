@@ -31,22 +31,9 @@ void SNGPWorker::setProblem(Problem *problem)
     _evalEngine.setNumInputs(_problem->getNumInputs());
     _evalEngine.setAvailableOps(_problem->getOps());
     _evalEngine.setSize(100);
-    _testCaseResults.resize(_problem->getNumFitnessCases());
     _evalEngine.setNumInputs(_problem->getNumInputs());
+    _problem->initTestCaseResults(_evalEngine.getSize());
     _fitness.resize(_evalEngine.getSize());
-
-    // Initialize the result sets for each test case.
-    for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
-        std::vector<int>& results = _testCaseResults[i];
-        results.resize(_evalEngine.getSize());
-        int* inputs = _problem->getInputs(i);
-        for (int j = 0; j < _problem->getNumInputs(); ++j) {
-            results[j] = inputs[j];
-        }
-        for (size_t j = _problem->getNumInputs(); j < results.size(); ++j) {
-            results[j] = 0;
-        }
-    }
 }
 
 void SNGPWorker::setNumTimesToRun(int times)
@@ -64,6 +51,7 @@ void SNGPWorker::reset()
     QMutexLocker lock(&_mutex);
     _stats.reset();
     _evalEngine.init();
+    resetFitness();
 }
 
 void SNGPWorker::pause()
@@ -98,24 +86,15 @@ void SNGPWorker::runGeneration()
     // Apply a new mutation or revert the previous
     if (_stats.generation == 0) {
         // Calculate fitness values for all test cases
-        for (size_t i = 0; i < _fitness.size(); ++i) {
-             _fitness[i] = 0.0;
-        }
-
+        resetFitness();
         _evalEngine.init();
 
-        for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
-            std::vector<int>& results = _testCaseResults[i];
-            _evalEngine.evalAll(results);
-            for (size_t j = 0; j < _fitness.size(); ++j) {
-                _fitness[j] += _problem->getFitness(results[j], i);
-            }
-        }
+        _problem->evaluate(_evalEngine.getNodes(), _fitness);
 
         // Calculate total scores
         int totalScore = 0;
-        int bestScore = _fitness[0];
-        for (size_t i = 0; i < _fitness.size(); ++i) {
+        int bestScore = _fitness[_problem->getNumInputs()];
+        for (size_t i = _problem->getNumInputs(); i < _fitness.size(); ++i) {
             totalScore += _fitness[i];
             if (_fitness[i] > bestScore) {
                 bestScore = _fitness[i];
@@ -127,8 +106,10 @@ void SNGPWorker::runGeneration()
         _stats.lastAvgScore = totalScore;
         _stats.avgScore = totalScore;
         _stats.bestScoreEver = totalScore;
-        _stats.bestIndividualScore = bestScore;
-        _stats.bestIndividualScoreEver = bestScore;
+        if (_stats.runs == 0) {
+            _stats.bestIndividualScore = bestScore;
+            _stats.bestIndividualScoreEver = bestScore;
+        }
     } else {
         if (_stats.avgScore < _stats.lastAvgScore) {
             _evalEngine.restore();
@@ -136,29 +117,15 @@ void SNGPWorker::runGeneration()
         }
         _evalEngine.mutate();
 
-        // Calculate fitness values for all test cases
-        std::set<int>& changedNodes = _evalEngine.getChangedNodes();
-        for (std::set<int>::iterator it = changedNodes.begin();
-                        it != changedNodes.end(); ++it) {
-             _fitness[*it] = 0;
-        }
+        _problem->evaluate(_evalEngine.getNodes(),
+                           _evalEngine.getChangedNodes(), _fitness);
 
-        for (int i = 0; i < _problem->getNumFitnessCases(); ++i) {
-            std::vector<int>& results = _testCaseResults[i];
-            int expectedOutput = _problem->getOutput(i);
-            for (std::set<int>::iterator it = changedNodes.begin();
-                        it != changedNodes.end(); ++it) {
-                int j = *it;
-                results[j] = _evalEngine.evalNode(j, results);
-                _fitness[j] += _problem->getFitness(results[j], expectedOutput);
-            }
-        }
         _evalEngine.clearChanged();
 
         // Calculate total scores
         int64_t totalScore = 0;
-        int bestScore = _fitness[0];
-        for (size_t i = 0; i < _fitness.size(); ++i) {
+        int bestScore = _fitness[_problem->getNumInputs()];
+        for (size_t i = _problem->getNumInputs(); i < _fitness.size(); ++i) {
             totalScore += _fitness[i];
             if (_fitness[i] > bestScore) {
                 bestScore = _fitness[i];
@@ -176,6 +143,13 @@ void SNGPWorker::runGeneration()
         }
     }
     _stats.generation++;
+}
+
+void SNGPWorker::resetFitness()
+{
+    for (size_t i = 0; i < _fitness.size(); ++i) {
+         _fitness[i] = 0.0;
+    }
 }
 
 QString SNGPWorker::getProgramAsText(int i)
@@ -230,7 +204,7 @@ QString SNGPWorker::getProgramAsText(int i)
 
 void SNGPWorker::run()
 {
-//    qsrand(1); Sometimes I set to 1 for testing.
+    // qsrand(1);// Set the seed to a fixed value when testing.
     qsrand((uint)QDateTime::currentMSecsSinceEpoch());
 
     _stats.startTimeMilliseconds = QDateTime::currentMSecsSinceEpoch();
